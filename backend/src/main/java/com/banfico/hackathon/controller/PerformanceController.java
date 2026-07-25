@@ -53,10 +53,10 @@ public class PerformanceController {
     public ResponseEntity<Map<String, Object>> dashboard() {
         long startTime = System.currentTimeMillis();
         List<AccountDto> accounts = agg.accounts();
-        List<BalanceDto> balances = accounts.stream()
-                .filter(account -> account.accountId() != null)
-                .flatMap(account -> agg.balances(account.accountId()).stream())
-                .toList();
+        // allBalances()/allTransactions()/overview() now share the same cached,
+        // concurrently-fetched data, so this composite call no longer re-hits
+        // Banfico account-by-account on every request.
+        List<BalanceDto> balances = agg.allBalances();
         List<TransactionDto> transactions = agg.allTransactions();
         Insights.Overview insights = agg.overview();
         long duration = System.currentTimeMillis() - startTime;
@@ -81,9 +81,10 @@ public class PerformanceController {
     public ResponseEntity<Map<String, Object>> cacheStatus() {
         return ResponseEntity.ok(Map.of(
                 "status", "Cache enabled",
-                "caches", List.of("accounts", "balances", "transactions", "overview"),
+                "caches", List.of("accounts", "balances", "allBalances", "transactions",
+                        "allTransactions", "overview"),
                 "ttl", "5 minutes",
-                "strategy", "In-memory concurrent cache"
+                "strategy", "In-memory concurrent cache (Caffeine, sync=true to prevent thundering herd)"
         ));
     }
 

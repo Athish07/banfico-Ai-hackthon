@@ -32,6 +32,7 @@ public class CacheConfig {
                 "balances",
                 "allBalances",
                 "transactions",
+                "allTransactions",
                 "overview",
                 "insights");
         cacheManager.setCaffeine(Caffeine.newBuilder()
