@@ -27,6 +27,9 @@
 //            subscriptions: [{ merchant, amount, cadence, annualised }],
 //            anomalies:  [ transaction ] }
 //
+//  GET  /api/performance/dashboard
+//       -> { accounts, balances, transactions, insights }
+//
 //  GET  /api/observations
 //       -> [{ id, severity: 'good'|'info'|'alert'|'danger',
 //             title, body, action: { type, label, payload } | null }]
@@ -229,6 +232,26 @@ export const api = {
     if (USE_MOCK) return sleep(500).then(() => mock.insights)
     const raw = await live('/insights/overview')
     return mapInsights(raw)
+  },
+
+  async getDashboard() {
+    if (USE_MOCK) {
+      await sleep(500)
+      return {
+        accounts: mock.accounts,
+        balances: mock.balances,
+        transactions: mock.transactions,
+        insights: mock.insights,
+      }
+    }
+
+    const raw = await live('/performance/dashboard')
+    return {
+      accounts: (raw.accounts || []).map(mapAccount),
+      balances: (raw.balances || []).map(mapBalance),
+      transactions: (raw.transactions || []).map(mapTransaction),
+      insights: mapInsights(raw.insights || raw.overview || {}),
+    }
   },
 
   async getObservations() {

@@ -20,7 +20,8 @@ export default function Dashboard() {
 
     // Core data blocks the page; observations stream in after, so the
     // dashboard is usable before the AI layer has finished thinking.
-    api.getDashboard()
+    api
+      .getDashboard()
       .then((dashboard) => {
         if (alive) setData(dashboard)
       })

@@ -53,7 +53,10 @@ public class PerformanceController {
     public ResponseEntity<Map<String, Object>> dashboard() {
         long startTime = System.currentTimeMillis();
         List<AccountDto> accounts = agg.accounts();
-        List<BalanceDto> balances = agg.allBalances();
+        List<BalanceDto> balances = accounts.stream()
+                .filter(account -> account.accountId() != null)
+                .flatMap(account -> agg.balances(account.accountId()).stream())
+                .toList();
         List<TransactionDto> transactions = agg.allTransactions();
         Insights.Overview insights = agg.overview();
         long duration = System.currentTimeMillis() - startTime;
@@ -64,7 +67,7 @@ public class PerformanceController {
                         "accounts", accounts,
                         "balances", balances,
                         "transactions", transactions,
-                        "overview", insights,
+                        "insights", insights,
                         "cached", duration < 100,
                         "responseTimeMs", duration
                 ));
