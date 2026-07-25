@@ -1,0 +1,55 @@
+package com.banfico.hackathon.controller;
+
+import com.banfico.hackathon.domain.AccountDto;
+import com.banfico.hackathon.domain.BalanceDto;
+import com.banfico.hackathon.domain.TransactionDto;
+import com.banfico.hackathon.service.AggregationService;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+
+/**
+ * Endpoints the React app calls. These now return NORMALISED DTOs rather than
+ * raw OBIE JsonNode — see ObieMapper for why that matters.
+ *
+ * @CrossOrigin was removed from here; CORS lives in WebMvcConfig.
+ */
+@RestController
+@RequestMapping("/api")
+public class BankController {
+
+    private final AggregationService aggregation;
+
+    public BankController(AggregationService aggregation) {
+        this.aggregation = aggregation;
+    }
+
+    @GetMapping("/accounts")
+    public List<AccountDto> getAccounts() {
+        return aggregation.accounts();
+    }
+
+    @GetMapping("/accounts/{accountId}")
+    public AccountDto getAccount(@PathVariable String accountId) {
+        return aggregation.account(accountId);
+    }
+
+    @GetMapping("/accounts/{accountId}/balances")
+    public List<BalanceDto> getBalances(@PathVariable String accountId) {
+        return aggregation.balances(accountId);
+    }
+
+    @GetMapping("/accounts/{accountId}/transactions")
+    public List<TransactionDto> getTransactions(@PathVariable String accountId) {
+        return aggregation.transactions(accountId);
+    }
+
+    /** Across all accounts — stops React from doing N+1 fetches. */
+    @GetMapping("/transactions")
+    public List<TransactionDto> getAllTransactions() {
+        return aggregation.allTransactions();
+    }
+}

@@ -1,0 +1,38 @@
+# Maven / Java build output
+/target/
+/build/
+/out/
+/bin/
+
+# Gradle
+.gradle/
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.classpath
+.project
+.settings/
+
+# Compiled class files
+*.class
+
+# Log files
+*.log
+
+# Package files
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+
+# Crash logs
+hs_err_pid*
+replay_pid*
+
+# Local config
+.env
