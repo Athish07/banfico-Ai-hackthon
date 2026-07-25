@@ -181,6 +181,32 @@ export const api = {
     return rows.map(mapTransaction)
   },
 
+  async getTransactionsPage({ page = 0, pageSize = 50 } = {}) {
+    if (USE_MOCK) {
+      await sleep(440)
+      const start = page * pageSize
+      const transactions = mock.transactions.slice(start, start + pageSize)
+      return {
+        transactions,
+        page,
+        pageSize,
+        totalCount: mock.transactions.length,
+        totalPages: Math.ceil(mock.transactions.length / pageSize),
+      }
+    }
+
+    const params = new URLSearchParams({
+      page: String(page),
+      pageSize: String(pageSize),
+    })
+    const payload = await live(`/performance/transactions?${params.toString()}`)
+
+    return {
+      ...payload,
+      transactions: (payload.transactions || []).map(mapTransaction),
+    }
+  },
+
   async getInsights() {
     if (USE_MOCK) return sleep(500).then(() => mock.insights)
     const raw = await live('/insights/overview')
