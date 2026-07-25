@@ -42,6 +42,12 @@ public class BankController {
         return aggregation.balances(accountId);
     }
 
+    /** Across all accounts — stops React from refetching /accounts to derive balances. */
+    @GetMapping("/balances")
+    public List<BalanceDto> getAllBalances() {
+        return aggregation.allBalances();
+    }
+
     @GetMapping("/accounts/{accountId}/transactions")
     public List<TransactionDto> getTransactions(@PathVariable String accountId) {
         return aggregation.transactions(accountId);
