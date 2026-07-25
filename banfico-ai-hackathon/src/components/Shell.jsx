@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom'
-import { LayoutDashboard, ReceiptText, Sparkles, LogOut, Menu, X } from 'lucide-react'
+import { LayoutDashboard, ReceiptText, Sparkles, LogOut, Menu, X, Search } from 'lucide-react'
 import { useState } from 'react'
 import Logo from './Logo.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
@@ -98,7 +98,7 @@ export default function Shell({ children, title, subtitle }) {
 
       {/* ── Main column ── */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-slate-200 bg-slate-50/85 px-5 py-4 backdrop-blur lg:px-8">
+        <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-slate-100 bg-white/95 px-5 py-3 backdrop-blur lg:px-8">
           <button
             className="rounded-lg border border-slate-200 bg-white p-2 lg:hidden"
             onClick={() => setOpen(true)}
@@ -107,21 +107,36 @@ export default function Shell({ children, title, subtitle }) {
             <Menu size={18} />
           </button>
 
-          <div className="min-w-0">
-            <h1 className="truncate font-display text-lg font-semibold tracking-tight text-navy-900">
-              {title}
-            </h1>
-            {subtitle && <p className="truncate text-[13px] text-slate-500">{subtitle}</p>}
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-4">
+              <div className="min-w-0">
+                <h1 className="truncate font-display text-lg font-semibold tracking-tight text-navy-900">
+                  {title}
+                </h1>
+                {subtitle && <p className="truncate text-[13px] text-slate-500">{subtitle}</p>}
+              </div>
+
+              <div className="hidden sm:flex items-center gap-2">
+                <div className="relative">
+                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input placeholder="Search transactions, merchants or categories" className="field pl-9 w-[360px]" />
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div className="ml-auto flex items-center gap-2.5">
-            <span className="hidden text-right text-[13px] leading-tight sm:block">
+          <div className="ml-auto flex items-center gap-3">
+            <div className="hidden sm:flex flex-col text-right">
               <span className="block font-medium text-navy-800">{user?.name}</span>
-              <span className="block text-slate-400">{user?.email}</span>
-            </span>
-            <span className="grid h-9 w-9 place-items-center rounded-full bg-navy-900 text-[13px] font-semibold text-white">
-              {initials(user?.name)}
-            </span>
+              <span className="block text-slate-400 text-[13px]">{user?.email}</span>
+            </div>
+
+            <div className="relative">
+              <button className="flex items-center gap-2 rounded-full bg-white border border-slate-100 px-3 py-1.5 shadow-sm">
+                <span className="h-8 w-8 flex items-center justify-center rounded-full bg-navy-900 text-white font-semibold">{initials(user?.name)}</span>
+                <span className="hidden sm:inline text-sm text-navy-800">{user?.name?.split(' ')[0]}</span>
+              </button>
+            </div>
           </div>
         </header>
 

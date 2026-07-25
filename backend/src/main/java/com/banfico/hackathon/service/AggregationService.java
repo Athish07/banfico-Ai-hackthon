@@ -7,6 +7,7 @@ import com.banfico.hackathon.dto.Insights;
 import com.banfico.hackathon.mapping.ObieMapper;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+import java.util.ArrayList;
 
 import java.math.BigDecimal;
 import java.time.Duration;

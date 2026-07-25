@@ -23,8 +23,10 @@
 
 @layer components {
   .card {
-    @apply bg-white rounded-card shadow-card border border-slate-100;
+    @apply bg-white rounded-lg shadow-sm border border-slate-100;
   }
+  .rounded-card { @apply rounded-lg }
+  .shadow-card { @apply shadow-sm }
   .eyebrow {
     @apply text-[11px] font-semibold uppercase tracking-[.14em] text-slate-400;
   }
@@ -42,4 +44,8 @@
            text-navy-800 placeholder:text-slate-400 transition
            focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100;
   }
+  .avatar {
+    @apply inline-flex items-center justify-center rounded-full bg-navy-900 text-white font-semibold;
+  }
+  .transaction-row:hover { @apply bg-slate-50 }
 }
