@@ -11,6 +11,9 @@
 //  GET  /api/balances
 //       -> [{ accountId, currency, available, current, asOf }]
 //
+//  GET  /api/performance/dashboard
+//       -> { accounts, balances, transactions, overview }
+//
 //  GET  /api/transactions?accountId=&from=&to=
 //       -> [{ transactionId, accountId, bookingDate, amount, currency,
 //             direction: 'credit'|'debit', merchant, description,
@@ -154,6 +157,26 @@ export const api = {
     return data
   },
 
+  async getDashboard() {
+    if (USE_MOCK) {
+      await sleep(500)
+      return {
+        accounts: mock.accounts,
+        balances: mock.balances,
+        transactions: mock.transactions,
+        insights: mock.insights,
+      }
+    }
+
+    const raw = await live('/performance/dashboard')
+    return {
+      accounts: (raw.accounts || []).map(mapAccount),
+      balances: (raw.balances || []).map(mapBalance),
+      transactions: (raw.transactions || []).map(mapTransaction),
+      insights: mapInsights(raw.overview || {}),
+    }
+  },
+
   async getAccounts() {
     if (USE_MOCK) return sleep(320).then(() => mock.accounts)
     const rows = await live('/accounts')
@@ -162,13 +185,8 @@ export const api = {
 
   async getBalances() {
     if (USE_MOCK) return sleep(380).then(() => mock.balances)
-    const rows = await live('/accounts')
-    return rows.map((account) => mapBalance({
-      accountId: account.accountId,
-      amount: account.balance ?? 0,
-      currency: account.currency,
-      asOf: new Date().toISOString(),
-    }))
+    const rows = await live('/balances')
+    return rows.map(mapBalance)
   },
 
   async getTransactions({ accountId } = {}) {
@@ -179,6 +197,32 @@ export const api = {
     const path = accountId ? `/accounts/${encodeURIComponent(accountId)}/transactions` : '/transactions'
     const rows = await live(path)
     return rows.map(mapTransaction)
+  },
+
+  async getTransactionsPage({ page = 0, pageSize = 50 } = {}) {
+    if (USE_MOCK) {
+      await sleep(440)
+      const start = page * pageSize
+      const transactions = mock.transactions.slice(start, start + pageSize)
+      return {
+        transactions,
+        page,
+        pageSize,
+        totalCount: mock.transactions.length,
+        totalPages: Math.ceil(mock.transactions.length / pageSize),
+      }
+    }
+
+    const params = new URLSearchParams({
+      page: String(page),
+      pageSize: String(pageSize),
+    })
+    const payload = await live(`/performance/transactions?${params.toString()}`)
+
+    return {
+      ...payload,
+      transactions: (payload.transactions || []).map(mapTransaction),
+    }
   },
 
   async getInsights() {

@@ -1,5 +1,7 @@
 package com.banfico.hackathon.controller;
 
+import com.banfico.hackathon.domain.AccountDto;
+import com.banfico.hackathon.domain.BalanceDto;
 import com.banfico.hackathon.domain.TransactionDto;
 import com.banfico.hackathon.dto.Insights;
 import com.banfico.hackathon.service.AggregationService;
@@ -50,12 +52,18 @@ public class PerformanceController {
     @GetMapping("/dashboard")
     public ResponseEntity<Map<String, Object>> dashboard() {
         long startTime = System.currentTimeMillis();
+        List<AccountDto> accounts = agg.accounts();
+        List<BalanceDto> balances = agg.allBalances();
+        List<TransactionDto> transactions = agg.allTransactions();
         Insights.Overview insights = agg.overview();
         long duration = System.currentTimeMillis() - startTime;
 
         return ResponseEntity.ok()
                 .header("X-Response-Time", duration + "ms")
                 .body(Map.of(
+                        "accounts", accounts,
+                        "balances", balances,
+                        "transactions", transactions,
                         "overview", insights,
                         "cached", duration < 100,
                         "responseTimeMs", duration

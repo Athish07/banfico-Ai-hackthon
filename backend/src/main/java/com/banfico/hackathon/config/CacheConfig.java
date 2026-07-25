@@ -30,6 +30,7 @@ public class CacheConfig {
         CaffeineCacheManager cacheManager = new CaffeineCacheManager(
                 "accounts",
                 "balances",
+                "allBalances",
                 "transactions",
                 "overview",
                 "insights");
