@@ -1,8 +1,9 @@
 import { createContext, useContext, useEffect, useState } from 'react'
+import { api } from '../api/client.js'
 
 const AuthContext = createContext(null)
 
-const DEMO = { email: 'demo@banfico.com', password: 'hackathon' }
+const DEMO = { email: 'nivas.ganesan+aihackathonteamf@banfico.com', password: 'KWRB@(7h2Gk2L1(8daiw' }
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
@@ -18,14 +19,14 @@ export function AuthProvider({ children }) {
     setReady(true)
   }, [])
 
-  // Demo-grade auth on purpose: the brief asks for a login page, not an
-  // identity provider. Swap for the real consent flow if there is time.
   async function signIn(email, password) {
-    await new Promise((r) => setTimeout(r, 550))
-    if (email.trim().toLowerCase() !== DEMO.email || password !== DEMO.password) {
-      throw new Error('That email and password do not match our demo account.')
+    const result = await api.login(email.trim(), password)
+    const u = {
+      email: email.trim(),
+      name: 'Aarav Menon',
+      consentedAt: new Date().toISOString(),
+      sessionToken: result.sessionToken,
     }
-    const u = { email: DEMO.email, name: 'Aarav Menon', consentedAt: new Date().toISOString() }
     localStorage.setItem('bf.user', JSON.stringify(u))
     setUser(u)
     return u
@@ -33,6 +34,7 @@ export function AuthProvider({ children }) {
 
   function signOut() {
     localStorage.removeItem('bf.user')
+    localStorage.removeItem('bf.sessionToken')
     setUser(null)
   }
 

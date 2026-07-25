@@ -37,29 +37,138 @@
 
 import * as mock from '../data/mock.js'
 
-const USE_MOCK = import.meta.env.VITE_USE_MOCK !== 'false'
-const BASE = import.meta.env.VITE_API_BASE || '/api'
+const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true'
+const BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8080/api'
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
-async function live(path, options) {
+function getToken() {
+  return localStorage.getItem('bf.sessionToken') || null
+}
+
+async function live(path, options = {}) {
+  const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) }
+  const token = getToken()
+  if (token) headers.Authorization = `Bearer ${token}`
+
   const res = await fetch(`${BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     ...options,
   })
-  if (!res.ok) throw new Error(`${options?.method || 'GET'} ${path} failed (${res.status})`)
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`${options?.method || 'GET'} ${path} failed (${res.status})${text ? `: ${text}` : ''}`)
+  }
+
   return res.json()
 }
 
+function mapAccount(account) {
+  return {
+    ...account,
+    type: account.accountType || account.type || 'Account',
+    maskedNumber: account.accountNumber?.slice(-4) ? `•••• ${account.accountNumber.slice(-4)}` : '•••• 0000',
+  }
+}
+
+function mapBalance(balance) {
+  return {
+    ...balance,
+    available: Number(balance.amount ?? balance.available ?? 0),
+    current: Number(balance.amount ?? balance.current ?? 0),
+    asOf: balance.asOf || new Date().toISOString(),
+  }
+}
+
+function mapTransaction(tx) {
+  const amount = Number(tx.amount ?? 0)
+  return {
+    ...tx,
+    transactionId: tx.transactionId || `${tx.accountId}-${tx.merchant}-${tx.bookedOn}`,
+    bookingDate: tx.bookedOn || tx.bookingDate || '',
+    amount,
+    direction: tx.credit ? 'credit' : 'debit',
+    merchant: tx.merchant || tx.description || 'Transaction',
+    category: tx.category || 'Other',
+    isSubscription: Boolean(tx.isSubscription),
+    isAnomaly: Boolean(tx.isAnomaly),
+  }
+}
+
+function mapInsights(raw) {
+  return {
+    summary: {
+      income: Number(raw?.monthly?.reduce((sum, m) => sum + Number(m.income || 0), 0) || 0),
+      expense: Number(raw?.monthly?.reduce((sum, m) => sum + Number(m.expense || 0), 0) || 0),
+      net: Number(raw?.monthly?.reduce((sum, m) => sum + Number(m.net || 0), 0) || 0),
+      savingsRate: Number(raw?.monthly?.[raw.monthly.length - 1]?.savingsRate ?? 0),
+    },
+    byMonth: (raw?.monthly || []).map((m) => ({
+      month: m.month,
+      income: Number(m.income || 0),
+      expense: Number(m.expense || 0),
+      net: Number(m.net || 0),
+      savingsRate: Number(m.savingsRate || 0),
+    })),
+    byCategory: (raw?.categories || []).map((c) => ({
+      category: c.category,
+      amount: Number(c.total || 0),
+      previous: 0,
+      pctChange: Number(c.changeVsPreviousMonth || 0),
+    })),
+    topMerchants: (raw?.topMerchants || []).map((m) => ({
+      merchant: m.merchant,
+      total: Number(m.total || 0),
+      transactionCount: Number(m.transactionCount || 0),
+    })),
+    subscriptions: (raw?.subscriptions || []).map((s) => ({
+      merchant: s.merchant,
+      amount: Number(s.typicalAmount || 0),
+      cadence: 'monthly',
+      annualised: Number(s.estimatedAnnualCost || 0),
+    })),
+    anomalies: (raw?.anomalies || []).map((a) => ({
+      ...a,
+      transaction: mapTransaction(a.transaction),
+    })),
+  }
+}
+
 export const api = {
+  async login(username, password) {
+    if (USE_MOCK) {
+      await sleep(320)
+      return { success: true, sessionToken: 'mock-token', message: 'mock login' }
+    }
+
+    const res = await fetch(`${BASE.replace('/api', '')}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    })
+
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) throw new Error(data.message || 'Login failed')
+    if (data.sessionToken) localStorage.setItem('bf.sessionToken', data.sessionToken)
+    return data
+  },
+
   async getAccounts() {
     if (USE_MOCK) return sleep(320).then(() => mock.accounts)
-    return live('/accounts')
+    const rows = await live('/accounts')
+    return rows.map(mapAccount)
   },
 
   async getBalances() {
     if (USE_MOCK) return sleep(380).then(() => mock.balances)
-    return live('/balances')
+    const rows = await live('/accounts')
+    return rows.map((account) => mapBalance({
+      accountId: account.accountId,
+      amount: account.balance ?? 0,
+      currency: account.currency,
+      asOf: new Date().toISOString(),
+    }))
   },
 
   async getTransactions({ accountId } = {}) {
@@ -67,28 +176,28 @@ export const api = {
       await sleep(440)
       return accountId ? mock.transactions.filter((t) => t.accountId === accountId) : mock.transactions
     }
-    const qs = accountId ? `?accountId=${encodeURIComponent(accountId)}` : ''
-    return live(`/transactions${qs}`)
+    const path = accountId ? `/accounts/${encodeURIComponent(accountId)}/transactions` : '/transactions'
+    const rows = await live(path)
+    return rows.map(mapTransaction)
   },
 
   async getInsights() {
     if (USE_MOCK) return sleep(500).then(() => mock.insights)
-    return live('/insights')
+    const raw = await live('/insights/overview')
+    return mapInsights(raw)
   },
 
   async getObservations() {
     if (USE_MOCK) return sleep(620).then(() => mock.observations)
-    return live('/observations')
+    return []
   },
 
-  // Dev 3 owns the real implementation. The canned replies below keep the
-  // chat demoable from hour one — delete them once the agent is wired up.
   async chat(messages) {
     if (USE_MOCK) {
       await sleep(900)
       return mockReply(messages.at(-1)?.content || '')
     }
-    return live('/assistant/chat', { method: 'POST', body: JSON.stringify({ messages }) })
+    return live('/chat', { method: 'POST', body: JSON.stringify({ message: messages.at(-1)?.content || '', history: messages }) })
   },
 
   async executeAction(action) {
@@ -96,7 +205,7 @@ export const api = {
       await sleep(700)
       return { ok: true, message: `${action.label} — done.` }
     }
-    return live('/actions/execute', { method: 'POST', body: JSON.stringify(action) })
+    return live('/chat', { method: 'POST', body: JSON.stringify(action) })
   },
 }
 

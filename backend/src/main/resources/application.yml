@@ -26,8 +26,8 @@ bank:
 
 # ── Portal login (your own login page) ───────────────────────────────────────
 app:
-  portal-username: ${PORTAL_USERNAME:demo}
-  portal-password: ${PORTAL_PASSWORD:demo123}
+  portal-username: ${PORTAL_USERNAME:nivas.ganesan+aihackathonteamf@banfico.com}
+  portal-password: ${PORTAL_PASSWORD:KWRB@(7h2Gk2L1(8daiw}
   session-ttl-minutes: 480
   cors-origins:
     - http://localhost:5173
