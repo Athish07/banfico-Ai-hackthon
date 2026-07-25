@@ -12,6 +12,7 @@ import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
  * How it works:
  * - @Cacheable("accounts") caches accounts() for 5 minutes
  * - @Cacheable("balances") caches balances per account for 5 minutes
+ * - @Cacheable("allBalances") caches the all-account balance collection for 5 minutes
  * - @Cacheable("transactions") caches transactions per account for 5 minutes
  * 
  * Cache is cleared when data changes (evict on @CacheEvict)
@@ -25,6 +26,7 @@ public class CacheConfig {
         return new ConcurrentMapCacheManager(
                 "accounts",
                 "balances",
+                "allBalances",
                 "transactions",
                 "overview",
                 "insights");
