@@ -8,7 +8,7 @@ import { api } from '../api/client.js'
 // Every other team will build a dashboard that tells you what happened.
 // This rail is the half that tells you what to do about it — and then
 // does it. Insight -> recommendation -> executed action, in one card.
-// Protect this in the demo above everything else.
+// Protect this in the experience above everything else.
 // ═══════════════════════════════════════════════════════════════
 
 const SEVERITY = {

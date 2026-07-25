@@ -64,17 +64,7 @@ export default function Home() {
             <Link to="/login" className="btn-primary px-5 py-3">
               Connect your accounts <ArrowRight size={16} />
             </Link>
-            <Link
-              to="/login"
-              className="inline-flex items-center gap-2 rounded-lg border border-white/20 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/5"
-            >
-              See the demo account
-            </Link>
           </div>
-
-          <p className="mt-6 font-mono text-[12px] text-slate-200/40">
-            demo@banfico.com · hackathon
-          </p>
         </div>
       </section>
 
@@ -96,7 +86,7 @@ export default function Home() {
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-3 text-[12.5px] text-slate-400">
           <Logo size={20} />
           <span className="ml-auto">
-            Built for the Banfico AI Hackathon. Account data is simulated.
+            Built for the Banfico AI Hackathon. Account data is loaded from the connected bank.
           </span>
         </div>
       </footer>

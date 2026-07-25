@@ -3,7 +3,14 @@ import { api } from '../api/client.js'
 
 const AuthContext = createContext(null)
 
-const DEMO = { email: 'nivas.ganesan+aihackathonteamf@banfico.com', password: 'KWRB@(7h2Gk2L1(8daiw' }
+function displayNameFromEmail(email = '') {
+  const local = email.split('@')[0] || ''
+  const first = local.split(/[.+]/)[0] || local
+  return first
+    .split(/[_-]/)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ')
+}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
@@ -21,9 +28,10 @@ export function AuthProvider({ children }) {
 
   async function signIn(email, password) {
     const result = await api.login(email.trim(), password)
+    const name = displayNameFromEmail(email.trim())
     const u = {
       email: email.trim(),
-      name: 'Aarav Menon',
+      name,
       consentedAt: new Date().toISOString(),
       sessionToken: result.sessionToken,
     }
@@ -40,7 +48,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, ready, signIn, signOut, DEMO }}>
+    <AuthContext.Provider value={{ user, ready, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   )

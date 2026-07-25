@@ -98,43 +98,34 @@ export default function Shell({ children, title, subtitle }) {
 
       {/* ── Main column ── */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-slate-100 bg-white/95 px-5 py-3 backdrop-blur lg:px-8">
-          <button
-            className="rounded-lg border border-slate-200 bg-white p-2 lg:hidden"
-            onClick={() => setOpen(true)}
-            aria-label="Open menu"
-          >
-            <Menu size={18} />
-          </button>
-
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-4">
+        <header className="sticky top-0 z-30 border-b border-slate-200 bg-slate-50/95 px-5 py-4 backdrop-blur-sm transition-colors duration-200 lg:px-8">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-4">
               <div className="min-w-0">
-                <h1 className="truncate font-display text-lg font-semibold tracking-tight text-navy-900">
+                <h1 className="truncate font-display text-xl font-semibold tracking-tight text-navy-900 lg:text-2xl">
                   {title}
                 </h1>
-                {subtitle && <p className="truncate text-[13px] text-slate-500">{subtitle}</p>}
+                {subtitle && <p className="truncate text-sm text-slate-500">{subtitle}</p>}
               </div>
-
-              <div className="hidden sm:flex items-center gap-2">
-                <div className="relative">
-                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input placeholder="Search transactions, merchants or categories" className="field pl-9 w-[360px]" />
-                </div>
+              <div className="relative w-full max-w-lg sm:w-[420px]">
+                <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  placeholder="Search transactions, merchants or categories"
+                  className="field pl-12 pr-4 py-3 w-full"
+                />
               </div>
             </div>
-          </div>
 
-          <div className="ml-auto flex items-center gap-3">
-            <div className="hidden sm:flex flex-col text-right">
-              <span className="block font-medium text-navy-800">{user?.name}</span>
-              <span className="block text-slate-400 text-[13px]">{user?.email}</span>
-            </div>
-
-            <div className="relative">
-              <button className="flex items-center gap-2 rounded-full bg-white border border-slate-100 px-3 py-1.5 shadow-sm">
-                <span className="h-8 w-8 flex items-center justify-center rounded-full bg-navy-900 text-white font-semibold">{initials(user?.name)}</span>
-                <span className="hidden sm:inline text-sm text-navy-800">{user?.name?.split(' ')[0]}</span>
+            <div className="flex flex-col items-start justify-end gap-3 sm:items-end sm:flex-row sm:gap-4">
+              <div className="hidden sm:flex flex-col text-right">
+                <span className="block font-medium text-navy-800">{user?.name}</span>
+                <span className="block text-slate-500 text-sm">{user?.email}</span>
+              </div>
+              <button className="flex items-center gap-3 rounded-full bg-white border border-slate-200 px-4 py-2 shadow-sm transition hover:border-teal-300">
+                <span className="h-9 w-9 flex items-center justify-center rounded-full bg-navy-900 text-sm font-semibold text-white">
+                  {initials(user?.name)}
+                </span>
+                <span className="hidden sm:inline text-sm font-semibold text-navy-900">{user?.name?.split(' ')[0]}</span>
               </button>
             </div>
           </div>

@@ -5,6 +5,7 @@ import Shell from '../components/Shell.jsx'
 import { CashflowChart, SpendByCategory } from '../components/Charts.jsx'
 import { TransactionList, DashboardSkeleton } from '../components/Widgets.jsx'
 import InsightRail from '../components/InsightRail.jsx'
+import { useAuth } from '../context/AuthContext.jsx'
 import { api } from '../api/client.js'
 import { gbp, catColor, longDate, shortDate } from '../lib/format.js'
 
@@ -132,6 +133,7 @@ function RecentActivity({ items }) {
 }
 
 export default function Dashboard() {
+  const { user } = useAuth()
   const [data, setData] = useState(null)
   const [obs, setObs] = useState([])
   const [obsLoading, setObsLoading] = useState(true)
@@ -195,10 +197,13 @@ export default function Dashboard() {
   const recentTransactions = selectedTransactions.slice(0, 4)
   const spent = insights.summary.expense
   const limitPct = Math.min(Math.round((spent / DAILY_LIMIT) * 100), 100)
+  const defaultName = user?.email?.split('@')[0] || 'Customer'
+  const userName = user?.name || defaultName.charAt(0).toUpperCase() + defaultName.slice(1)
+  const selectedAccount = selected ? accounts.find((a) => a.accountId === selected) : null
 
   return (
     <Shell
-      title={`Hello, ${data.user?.name || 'Aarav'}`}
+      title={`Hello, ${userName}`}
       subtitle={`Updated ${longDate(balances[0]?.asOf || new Date().toISOString())}`}
     >
       <div className="space-y-5">
@@ -247,6 +252,35 @@ export default function Dashboard() {
                   View all activity <ArrowRight size={14} />
                 </Link>
               </div>
+
+              <div className="mt-5 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSelected(null)}
+                  className={`rounded-full border px-3 py-2 text-sm font-semibold transition ${
+                    !selected
+                      ? 'border-teal-500 bg-teal-50 text-teal-700 shadow-sm'
+                      : 'border-slate-200 bg-white text-slate-700 hover:border-teal-300'
+                  }`}
+                >
+                  All accounts
+                </button>
+                {accounts.map((account) => (
+                  <button
+                    type="button"
+                    key={account.accountId}
+                    onClick={() => setSelected(selected === account.accountId ? null : account.accountId)}
+                    className={`rounded-full border px-3 py-2 text-sm font-semibold transition ${
+                      selected === account.accountId
+                        ? 'border-teal-500 bg-teal-50 text-teal-700 shadow-sm'
+                        : 'border-slate-200 bg-white text-slate-700 hover:border-teal-300'
+                    }`}
+                  >
+                    {account.nickname}
+                  </button>
+                ))}
+              </div>
+
               <div className="mt-5 overflow-hidden rounded-3xl border border-slate-200">
                 <TransactionList items={selectedTransactions.slice(0, 8)} />
               </div>
@@ -254,7 +288,7 @@ export default function Dashboard() {
           </div>
 
           <div className="space-y-5">
-            <CardBalance account={cardAccount} balance={cardBalance} userName={data.user?.name || 'Aarav Jain'} />
+            <CardBalance account={cardAccount} balance={cardBalance} userName={userName} />
 
             <div className="card p-5">
               <div className="flex items-start justify-between gap-4">

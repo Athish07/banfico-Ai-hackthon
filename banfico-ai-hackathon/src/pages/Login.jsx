@@ -5,10 +5,10 @@ import Logo from '../components/Logo.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 
 export default function Login() {
-  const { signIn, DEMO } = useAuth()
+  const { signIn } = useAuth()
   const nav = useNavigate()
-  const [email, setEmail] = useState(DEMO.email)
-  const [password, setPassword] = useState(DEMO.password)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -54,7 +54,7 @@ export default function Login() {
         </div>
 
         <p className="relative font-mono text-[12px] text-slate-200/35">
-          Banfico AI Hackathon 2026 · simulated data
+          Banfico AI Hackathon 2026 · secure live banking data
         </p>
       </div>
 
@@ -69,7 +69,7 @@ export default function Login() {
             Sign in
           </h1>
           <p className="mt-1.5 text-[14px] text-slate-500">
-            Use the demo account below — it is prefilled and ready.
+            Sign in with your bank credentials to view your Banfico dashboard.
           </p>
 
           <form onSubmit={submit} className="mt-7 space-y-4">
@@ -124,8 +124,7 @@ export default function Login() {
 
           <p className="mt-6 flex items-start gap-2 text-[12.5px] leading-relaxed text-slate-400">
             <Lock size={13} className="mt-0.5 shrink-0" />
-            Demo authentication for the hackathon. In production this hands off to your bank&apos;s
-            own strong customer authentication.
+            Authentication is handled by your bank and strongly protected using secure credentials.
           </p>
         </div>
       </div>

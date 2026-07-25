@@ -52,7 +52,7 @@ export default function ChatPanel({ compact = false }) {
     }
   }
 
-  // Browser speech recognition — ~15 lines, and it lands hard in a demo.
+  // Browser speech recognition is supported for convenience.
   function startVoice() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition
     if (!SR) return

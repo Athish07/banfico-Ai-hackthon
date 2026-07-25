@@ -16,11 +16,10 @@ cp .env.example .env
 npm run dev          # http://localhost:5173
 ```
 
-Sign in with **`demo@banfico.com`** / **`hackathon`** (prefilled on the login page).
+Start the backend on port `8080` and run the frontend locally with live API integration.
 
-The app ships with a deterministic mock data layer, so it runs fully standalone with no backend.
-To switch to the live Banfico APIs, set `VITE_USE_MOCK=false` in `.env` and start the backend on
-port `8080` (Vite proxies `/api` to it — see `vite.config.js`).
+The frontend now connects directly to the backend proxy through `/api`. Ensure the backend is
+running before signing in.
 
 ---
 
@@ -35,12 +34,12 @@ port `8080` (Vite proxies `/api` to it — see `vite.config.js`).
                             │  (src/api/client.js)
               ┌─────────────┴─────────────┐
               │                           │
-      ┌───────▼────────┐        ┌─────────▼──────────┐
-      │  Mock layer    │        │  Backend proxy     │
-      │  src/data/     │        │  (Dev 1)           │
-      │  6 months of   │        │  normalise +       │
-      │  seeded data   │        │  categorise +      │
-      └────────────────┘        │  aggregate         │
+      ┌───────────────────────▼──────────┐
+      │            Backend proxy           │
+      │             (Dev 1)                │
+      │        normalise + categorise      │
+      │             aggregate              │
+      └────────────────────────────────────┘
                                 └────┬──────────┬────┘
                                      │          │
                         ┌────────────▼──┐   ┌───▼─────────────┐
@@ -76,12 +75,12 @@ Two endpoints do the interesting work:
 
 | | Owns | Files |
 |---|---|---|
-| **Dev 1 — Data** | Banfico API client, seeder, categorisation, aggregation, anomaly + subscription detection | backend, replaces `src/data/mock.js` as the source |
+| **Dev 1 — Data** | Banfico API client, seeder, categorisation, aggregation, anomaly + subscription detection | backend proxy, returns live bank data |
 | **Dev 2 — Experience** | Login, home, dashboard, charts, chat UI, responsiveness | `src/pages/`, `src/components/` |
 | **Dev 3 — Intelligence** | Agent loop, tool definitions, insight narratives, action execution | `POST /assistant/chat`, `GET /observations`, `POST /actions/execute` |
 
-Dev 2 and Dev 3 are unblocked from minute one because the mock layer already returns the real
-shapes. Dev 1 swaps the source behind the same interface; no UI changes needed.
+The frontend now depends on the live backend contract. Dev 1 provides the real data shapes and
+Dev 2 / Dev 3 render them directly.
 
 ---
 
@@ -119,21 +118,19 @@ workflow automation (agentic actions) · personalised dashboard
 
 ---
 
-## Demo path
+## Live backend path
 
-1. Land on home, sign in
-2. Dashboard: three accounts unified, savings rate, spending shape
-3. The rail has already noticed eating out is up 31% — no one asked it to
-4. Ask the assistant why → it explains with real figures and proposes a £300 cap
-5. Approve → the action executes and confirms
-6. Transactions → filter to Flagged → the £899 charge and the duplicate Adobe billing
-
-Under four minutes. One person drives, one narrates.
+1. Land on home, sign in with your bank credentials
+2. Dashboard: accounts unified, balances, spending shape, savings rate
+3. The rail surfaces real insights and recommendations based on connected accounts
+4. Ask the assistant about spending, subscriptions, or savings
+5. Approve an action and the backend executes it through the connected service
+6. View transactions and flagged activity in your real account history
 
 ---
 
 ## Known limits
 
-Authentication is demo-grade by design — the brief asks for a login page, not an identity
-provider. In production this hands off to the bank's own strong customer authentication under
-PSD2. Account data is simulated throughout.
+Authentication currently uses the app's own login page and session token flow. In a
+full production deployment this would be replaced by your bank's identity provider or
+standard strong customer authentication.

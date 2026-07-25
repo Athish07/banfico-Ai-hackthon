@@ -41,12 +41,7 @@
 //       -> { ok, message }
 // ═══════════════════════════════════════════════════════════════
 
-import * as mock from '../data/mock.js'
-
-const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true'
 const BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8080/api'
-
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
 function getToken() {
   return localStorage.getItem('bf.sessionToken') || null
@@ -143,11 +138,6 @@ function mapInsights(raw) {
 
 export const api = {
   async login(username, password) {
-    if (USE_MOCK) {
-      await sleep(320)
-      return { success: true, sessionToken: 'mock-token', message: 'mock login' }
-    }
-
     const res = await fetch(`${BASE.replace('/api', '')}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -160,62 +150,23 @@ export const api = {
     return data
   },
 
-  async getDashboard() {
-    if (USE_MOCK) {
-      await sleep(500)
-      return {
-        accounts: mock.accounts,
-        balances: mock.balances,
-        transactions: mock.transactions,
-        insights: mock.insights,
-      }
-    }
-
-    const raw = await live('/performance/dashboard')
-    return {
-      accounts: (raw.accounts || []).map(mapAccount),
-      balances: (raw.balances || []).map(mapBalance),
-      transactions: (raw.transactions || []).map(mapTransaction),
-      insights: mapInsights(raw.overview || {}),
-    }
-  },
-
   async getAccounts() {
-    if (USE_MOCK) return sleep(320).then(() => mock.accounts)
     const rows = await live('/accounts')
     return rows.map(mapAccount)
   },
 
   async getBalances() {
-    if (USE_MOCK) return sleep(380).then(() => mock.balances)
     const rows = await live('/balances')
     return rows.map(mapBalance)
   },
 
   async getTransactions({ accountId } = {}) {
-    if (USE_MOCK) {
-      await sleep(440)
-      return accountId ? mock.transactions.filter((t) => t.accountId === accountId) : mock.transactions
-    }
     const path = accountId ? `/accounts/${encodeURIComponent(accountId)}/transactions` : '/transactions'
     const rows = await live(path)
     return rows.map(mapTransaction)
   },
 
   async getTransactionsPage({ page = 0, pageSize = 50 } = {}) {
-    if (USE_MOCK) {
-      await sleep(440)
-      const start = page * pageSize
-      const transactions = mock.transactions.slice(start, start + pageSize)
-      return {
-        transactions,
-        page,
-        pageSize,
-        totalCount: mock.transactions.length,
-        totalPages: Math.ceil(mock.transactions.length / pageSize),
-      }
-    }
-
     const params = new URLSearchParams({
       page: String(page),
       pageSize: String(pageSize),
@@ -229,22 +180,11 @@ export const api = {
   },
 
   async getInsights() {
-    if (USE_MOCK) return sleep(500).then(() => mock.insights)
     const raw = await live('/insights/overview')
     return mapInsights(raw)
   },
 
   async getDashboard() {
-    if (USE_MOCK) {
-      await sleep(500)
-      return {
-        accounts: mock.accounts,
-        balances: mock.balances,
-        transactions: mock.transactions,
-        insights: mock.insights,
-      }
-    }
-
     const raw = await live('/performance/dashboard')
     return {
       accounts: (raw.accounts || []).map(mapAccount),
@@ -255,72 +195,14 @@ export const api = {
   },
 
   async getObservations() {
-    if (USE_MOCK) return sleep(620).then(() => mock.observations)
-    return []
+    return live('/observations')
   },
 
   async chat(messages) {
-    if (USE_MOCK) {
-      await sleep(900)
-      return mockReply(messages.at(-1)?.content || '')
-    }
     return live('/chat', { method: 'POST', body: JSON.stringify({ message: messages.at(-1)?.content || '', history: messages }) })
   },
 
   async executeAction(action) {
-    if (USE_MOCK) {
-      await sleep(700)
-      return { ok: true, message: `${action.label} — done.` }
-    }
     return live('/chat', { method: 'POST', body: JSON.stringify(action) })
   },
-}
-
-function mockReply(q) {
-  const t = q.toLowerCase()
-  if (t.includes('food') || t.includes('eating') || t.includes('takeaway')) {
-    return {
-      reply:
-        'Eating out came to £428 this month across 22 purchases — 31% above your six-month average of £327. Deliveroo is the biggest single driver at £141 over four orders. Capping this category at £300 would put you back in line without touching your grocery spend.',
-      proposedAction: {
-        type: 'CREATE_BUDGET',
-        label: 'Cap eating out at £300',
-        payload: { category: 'Eating out', limit: 300 },
-      },
-    }
-  }
-  if (t.includes('save') || t.includes('saving')) {
-    return {
-      reply:
-        'You have finished five of the last six months in surplus, averaging £340 spare after everything cleared. Your standing order is currently £200. Raising it to £340 still leaves your current account above its lowest point this year.',
-      proposedAction: {
-        type: 'CREATE_TRANSFER',
-        label: 'Increase savings order to £340',
-        payload: { from: 'ACC-1001', to: 'ACC-1002', amount: 340, cadence: 'monthly' },
-      },
-    }
-  }
-  if (t.includes('subscription') || t.includes('recurring')) {
-    return {
-      reply:
-        'Six recurring charges total £84.93 a month, or £1,019 a year. Adobe Creative Cloud billed twice in June — that duplicate £19.97 is usually refundable. Guardian Digital shows no matching activity in your card history.',
-      proposedAction: {
-        type: 'DRAFT_DISPUTE',
-        label: 'Draft a refund request to Adobe',
-        payload: { amount: 19.97 },
-      },
-    }
-  }
-  if (t.includes('unusual') || t.includes('fraud') || t.includes('strange')) {
-    return {
-      reply:
-        'Three things stand out. TechnoWorld Online took £899 on 11 July — about 17 times your typical Shopping transaction, from a merchant with no prior history. A Lisbon ATM withdrawal on 19 July carried a 2.75% non-sterling fee. And Adobe double-billed in June.',
-      proposedAction: null,
-    }
-  }
-  return {
-    reply:
-      'This is the mock assistant — Dev 3 replaces it with the real agent. Try asking about your food spending, subscriptions, savings capacity, or anything unusual.',
-    proposedAction: null,
-  }
 }
