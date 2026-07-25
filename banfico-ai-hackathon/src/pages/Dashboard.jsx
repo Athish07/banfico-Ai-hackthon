@@ -20,9 +20,10 @@ export default function Dashboard() {
 
     // Core data blocks the page; observations stream in after, so the
     // dashboard is usable before the AI layer has finished thinking.
-    Promise.all([api.getAccounts(), api.getBalances(), api.getTransactions(), api.getInsights()])
-      .then(([accounts, balances, transactions, insights]) => {
-        if (alive) setData({ accounts, balances, transactions, insights })
+    api
+      .getDashboard()
+      .then((dashboard) => {
+        if (alive) setData(dashboard)
       })
       .catch(() => alive && setError('We could not load your accounts. Check the backend is running.'))
 

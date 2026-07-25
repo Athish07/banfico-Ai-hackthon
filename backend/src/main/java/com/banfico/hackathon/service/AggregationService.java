@@ -6,13 +6,14 @@ import com.banfico.hackathon.domain.TransactionDto;
 import com.banfico.hackathon.dto.Insights;
 import com.banfico.hackathon.mapping.ObieMapper;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
+
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 /**
  * "Unified financial visibility" with caching for 90% faster dashboard loads.
@@ -68,6 +69,18 @@ public class AggregationService {
         return mapper.balances(bank.getBalances(accountId).block(TIMEOUT));
     }
 
+    /** Every balance across every account, newest first per provider response. */
+    @Cacheable("allBalances")
+    public List<BalanceDto> allBalances() {
+        List<BalanceDto> all = new ArrayList<>();
+        for (AccountDto a : accounts()) {
+            if (a.accountId() == null)
+                continue;
+            all.addAll(balances(a.accountId()));
+        }
+        return all;
+    }
+
     /**
      * CACHED: Returns transactions for specific account (cached for 5 min)
      * Cache key: transactions::accountId
@@ -79,14 +92,7 @@ public class AggregationService {
 
     /** Every transaction across every account, newest first. */
     public List<TransactionDto> allTransactions() {
-        List<TransactionDto> all = new ArrayList<>();
-        for (AccountDto a : accounts()) {
-            if (a.accountId() == null)
-                continue;
-            all.addAll(transactions(a.accountId()));
-        }
-        all.sort((x, y) -> y.bookedOn().compareTo(x.bookedOn()));
-        return all;
+        return transactionsForAccounts(accounts()).block(TIMEOUT);
     }
 
     /**
@@ -102,30 +108,47 @@ public class AggregationService {
     @Cacheable("overview")
     public Insights.Overview overview() {
         List<AccountDto> accounts = accounts();
-        BigDecimal total = BigDecimal.ZERO;
-        List<TransactionDto> txns = new ArrayList<>();
 
-        for (AccountDto a : accounts) {
-            if (a.accountId() == null)
-                continue;
-            BigDecimal accountBalance = balances(a.accountId()).stream()
-                    .map(BalanceDto::amount)
-                    .findFirst()
-                    .orElse(a.balance());
-            total = total.add(accountBalance == null ? BigDecimal.ZERO : accountBalance);
-            txns.addAll(transactions(a.accountId()));
+        return Mono.zip(transactionsForAccounts(accounts), totalBalanceForAccounts(accounts))
+                .map(data -> insights.build(data.getT1(), data.getT2(), accounts.size()))
+                .block(TIMEOUT);
+    }
+
+    private Mono<List<TransactionDto>> transactionsForAccounts(List<AccountDto> accounts) {
+        return Flux.fromIterable(accounts)
+                .filter(account -> account.accountId() != null)
+                .map(AccountDto::accountId)
+                .flatMap(accountId -> bank.getTransactions(accountId)
+                        .map(raw -> mapper.transactions(raw, accountId)))
+                .flatMapIterable(transactions -> transactions)
+                .sort((x, y) -> y.bookedOn().compareTo(x.bookedOn()))
+                .collectList();
+    }
+
+    private Mono<BigDecimal> totalBalanceForAccounts(List<AccountDto> accounts) {
+        return Flux.fromIterable(accounts)
+                .flatMap(account -> balanceForAccount(account)
+                        .map(balance -> balance == null ? BigDecimal.ZERO : balance))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private Mono<BigDecimal> balanceForAccount(AccountDto account) {
+        if (account.accountId() == null) {
+            return Mono.justOrEmpty(account.balance());
         }
-
-        txns.sort((x, y) -> y.bookedOn().compareTo(x.bookedOn()));
-        return insights.build(txns, total, accounts.size());
+        return bank.getBalances(account.accountId())
+                .map(mapper::balances)
+                .map(balances -> balances.stream()
+                        .map(BalanceDto::amount)
+                        .findFirst()
+                        .orElse(account.balance()));
     }
 
     /**
-     * Clear all caches when data changes (after creating account/transaction)
+     * Cache entries expire automatically 5 minutes after they are written.
      */
     public void clearCache() {
-        // In production, use CacheManager directly
-        // For now, cache auto-expires in 5 minutes
+        // Intentionally left empty; CacheConfig provides the Caffeine TTL policy.
     }
 
     public static class NotFoundException extends RuntimeException {

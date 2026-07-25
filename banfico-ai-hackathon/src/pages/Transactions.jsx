@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Search, SlidersHorizontal } from 'lucide-react'
 import Shell from '../components/Shell.jsx'
 import { TransactionList, Skeleton } from '../components/Widgets.jsx'
 import { api } from '../api/client.js'
 import { gbp } from '../lib/format.js'
+
+const PAGE_SIZE = 50
 
 export default function Transactions() {
   const [rows, setRows] = useState(null)
@@ -11,13 +13,37 @@ export default function Transactions() {
   const [q, setQ] = useState('')
   const [account, setAccount] = useState('all')
   const [only, setOnly] = useState('all') // all | flagged | recurring
+  const [pageInfo, setPageInfo] = useState({ page: -1, pageSize: PAGE_SIZE, totalCount: 0, totalPages: 0 })
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const [error, setError] = useState('')
+
+  const loadTransactionsPage = useCallback(async (page, { append = false } = {}) => {
+    setError('')
+    if (append) setIsLoadingMore(true)
+
+    try {
+      const payload = await api.getTransactionsPage({ page, pageSize: PAGE_SIZE })
+      setRows((current) => (append ? [...(current || []), ...payload.transactions] : payload.transactions))
+      setPageInfo({
+        page: payload.page,
+        pageSize: payload.pageSize,
+        totalCount: payload.totalCount,
+        totalPages: payload.totalPages,
+      })
+    } catch (err) {
+      setError(err.message || 'Could not load transactions')
+      if (!append) setRows([])
+    } finally {
+      if (append) setIsLoadingMore(false)
+    }
+  }, [])
 
   useEffect(() => {
-    Promise.all([api.getTransactions(), api.getAccounts()]).then(([t, a]) => {
-      setRows(t)
-      setAccounts(a)
+    Promise.all([loadTransactionsPage(0), api.getAccounts().then(setAccounts)]).catch((err) => {
+      setError(err.message || 'Could not load transactions')
+      setRows([])
     })
-  }, [])
+  }, [loadTransactionsPage])
 
   const filtered = useMemo(() => {
     if (!rows) return []
@@ -38,6 +64,8 @@ export default function Transactions() {
   const outgoing = filtered
     .filter((t) => t.direction === 'debit')
     .reduce((s, t) => s + t.amount, 0)
+  const loadedCount = rows?.length || 0
+  const hasMore = pageInfo.totalPages > 0 && pageInfo.page + 1 < pageInfo.totalPages
 
   return (
     <Shell title="Transactions" subtitle="Six months across every connected account">
@@ -46,14 +74,14 @@ export default function Transactions() {
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             className="field pl-9"
-            placeholder="Search merchant, category or reference"
+            placeholder="Search loaded merchants, categories or references"
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />
         </div>
 
         <select className="field w-auto" value={account} onChange={(e) => setAccount(e.target.value)}>
-          <option value="all">All accounts</option>
+          <option value="all">All loaded accounts</option>
           {accounts.map((a) => (
             <option key={a.accountId} value={a.accountId}>
               {a.nickname}
@@ -84,14 +112,33 @@ export default function Transactions() {
         <Skeleton className="h-[520px]" />
       ) : (
         <div className="card overflow-hidden">
-          <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-3">
-            <SlidersHorizontal size={14} className="text-slate-400" />
-            <p className="text-[13px] text-slate-500">
-              <span className="tnum font-semibold text-navy-900">{filtered.length}</span> transactions ·{' '}
-              <span className="tnum font-semibold text-navy-900">{gbp(outgoing)}</span> out
-            </p>
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
+            <div className="flex items-center gap-2">
+              <SlidersHorizontal size={14} className="text-slate-400" />
+              <p className="text-[13px] text-slate-500">
+                <span className="tnum font-semibold text-navy-900">{filtered.length}</span> shown from{' '}
+                <span className="tnum font-semibold text-navy-900">{loadedCount}</span> loaded
+                {pageInfo.totalCount ? (
+                  <>
+                    {' '}
+                    of <span className="tnum font-semibold text-navy-900">{pageInfo.totalCount}</span>
+                  </>
+                ) : null}{' '}
+                transactions · <span className="tnum font-semibold text-navy-900">{gbp(outgoing)}</span> out
+              </p>
+            </div>
+            {hasMore ? (
+              <button
+                className="rounded-lg bg-navy-900 px-3 py-1.5 text-[12.5px] font-semibold text-white transition hover:bg-navy-800 disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={isLoadingMore}
+                onClick={() => loadTransactionsPage(pageInfo.page + 1, { append: true })}
+              >
+                {isLoadingMore ? 'Loading…' : 'Load more'}
+              </button>
+            ) : null}
           </div>
-          <TransactionList items={filtered} emptyHint="Try clearing the search or switching filters." />
+          {error ? <p className="border-b border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p> : null}
+          <TransactionList items={filtered} emptyHint="Try clearing the search, switching filters or loading more transactions." />
         </div>
       )}
     </Shell>
