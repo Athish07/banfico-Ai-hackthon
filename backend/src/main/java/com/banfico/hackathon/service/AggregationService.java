@@ -6,7 +6,6 @@ import com.banfico.hackathon.domain.TransactionDto;
 import com.banfico.hackathon.dto.Insights;
 import com.banfico.hackathon.mapping.ObieMapper;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -121,11 +120,10 @@ public class AggregationService {
     }
 
     /**
-     * Clear all caches when data changes (after creating account/transaction)
+     * Cache entries expire automatically 5 minutes after they are written.
      */
     public void clearCache() {
-        // In production, use CacheManager directly
-        // For now, cache auto-expires in 5 minutes
+        // Intentionally left empty; CacheConfig provides the Caffeine TTL policy.
     }
 
     public static class NotFoundException extends RuntimeException {
