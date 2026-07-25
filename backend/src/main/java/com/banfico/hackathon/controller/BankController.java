@@ -6,10 +6,12 @@ import com.banfico.hackathon.domain.TransactionDto;
 import com.banfico.hackathon.service.AggregationService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Endpoints the React app calls. These now return NORMALISED DTOs rather than
@@ -57,5 +59,16 @@ public class BankController {
     @GetMapping("/transactions")
     public List<TransactionDto> getAllTransactions() {
         return aggregation.allTransactions();
+    }
+
+    /**
+     * Force-clears every cache. Call this right after a real account-connect
+     * or a new transaction so the dashboard reflects it immediately instead
+     * of waiting out the 5-minute TTL.
+     */
+    @PostMapping("/refresh")
+    public Map<String, String> refresh() {
+        aggregation.clearCache();
+        return Map.of("status", "cache cleared");
     }
 }

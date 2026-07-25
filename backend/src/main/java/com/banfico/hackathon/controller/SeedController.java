@@ -88,6 +88,11 @@ public class SeedController {
             if (id != null) createdIds.add(id);
         }
 
+        // Clear the cache before reading accounts() below — otherwise this
+        // fallback (and the dashboard, moments later) can see a stale/empty
+        // accounts list cached from before these accounts existed.
+        aggregation.clearCache();
+
         // Fall back to whatever the sandbox reports if the POST response shape differs.
         List<String> targets = createdIds.isEmpty()
                 ? aggregation.accounts().stream().map(AccountDto::accountId).filter(java.util.Objects::nonNull).toList()
@@ -97,6 +102,11 @@ public class SeedController {
         for (String accountId : targets) {
             total += seedTransactions(accountId, months);
         }
+
+        // Clear again: seeding just wrote a bunch of transactions, and the
+        // transactions/allTransactions/overview caches (and the accounts
+        // cache, if the fallback path above populated it) must not linger.
+        aggregation.clearCache();
 
         Map<String, Object> out = new LinkedHashMap<>();
         out.put("accountsCreated", createdIds.size());
