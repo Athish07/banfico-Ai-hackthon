@@ -68,6 +68,18 @@ public class AggregationService {
         return mapper.balances(bank.getBalances(accountId).block(TIMEOUT));
     }
 
+    /** Every balance across every account, newest first per provider response. */
+    @Cacheable("allBalances")
+    public List<BalanceDto> allBalances() {
+        List<BalanceDto> all = new ArrayList<>();
+        for (AccountDto a : accounts()) {
+            if (a.accountId() == null)
+                continue;
+            all.addAll(balances(a.accountId()));
+        }
+        return all;
+    }
+
     /**
      * CACHED: Returns transactions for specific account (cached for 5 min)
      * Cache key: transactions::accountId
