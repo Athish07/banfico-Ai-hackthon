@@ -28,6 +28,7 @@ export function AuthProvider({ children }) {
       sessionToken: result.sessionToken,
     }
     localStorage.setItem('bf.user', JSON.stringify(u))
+    localStorage.setItem('bf.sessionToken', result.sessionToken)
     setUser(u)
     return u
   }

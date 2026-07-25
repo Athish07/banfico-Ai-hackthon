@@ -12,8 +12,10 @@ import java.io.IOException;
 /**
  * Gate for protected endpoints.
  *
- * Fixes vs the first version: accepts a standard "Authorization: Bearer <token>"
- * as well as X-Session-Token (axios interceptors are easier to write against the
+ * Fixes vs the first version: accepts a standard "Authorization: Bearer
+ * <token>"
+ * as well as X-Session-Token (axios interceptors are easier to write against
+ * the
  * standard header), and returns a JSON body so the frontend can show a real
  * message instead of an empty 401.
  */
@@ -28,6 +30,11 @@ public class SessionInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
             throws IOException {
+
+        // Allow CORS preflight OPTIONS requests to pass through without authentication
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            return true;
+        }
 
         String token = resolveToken(request);
         if (sessionService.isValidSession(token)) {
